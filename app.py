@@ -95,11 +95,7 @@ def tinh_diem_phuong_an(phuong_an, chien_thuat):
                 bd_sau = ca_hocs[i+1][0]
                 khoang_cach = bd_sau - kt_truoc
                 
-                # 🌟 VÁ LỖI NGHỈ TRƯA: Nếu nối giữa Sáng (<=11h45) và Chiều (>=12h30)
-                if kt_truoc <= 705 and bd_sau >= 750:
-                    khoang_cach = max(0, khoang_cach - 45) # Ân xá 45 phút ăn trưa
-                    
-                if khoang_cach > 30: 
+                if khoang_cach > 60: 
                     tong_gio_chet_ca_ky += khoang_cach
                     
     # CÔNG THỨC CHẤM ĐIỂM
