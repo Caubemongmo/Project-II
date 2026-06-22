@@ -1,0 +1,13 @@
+# Bỏ qua môi trường ảo
+.venv/
+venv/
+env/
+
+# Bỏ qua file rác của Python
+__pycache__/
+*.pyc
+
+# Bỏ qua dữ liệu thô (Tránh làm nặng repo)
+*.xlsx
+*.xls
+*.csv
