@@ -4,7 +4,80 @@ import re
 from streamlit_calendar import calendar
 
 # ==========================================
-# 🧠 CÁC HÀM XỬ LÝ LOGIC & AI ENGINE
+# 🎨 CẤU HÌNH GIAO DIỆN & CUSTOM CSS
+# ==========================================
+st.set_page_config(page_title="HUST Timetable AI", page_icon="🎓", layout="wide")
+
+def inject_custom_css():
+    st.markdown("""
+        <style>
+        /* Tùy chỉnh font chữ tổng thể */
+        .stApp {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+        
+        /* Metric thống kê - Đỏ Bách Khoa */
+        [data-testid="stMetricValue"] {
+            font-size: 1.8rem;
+            color: #C62828; 
+            font-weight: bold;
+        }
+        
+        /* Style dòng cảnh báo */
+        .red-warning {
+            color: #D32F2F;
+            background-color: #FFEBEE;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border-left: 5px solid #D32F2F;
+            margin-bottom: 1rem;
+        }
+
+        /* --- ÉP KÍCH THƯỚC LỊCH NGẮN LẠI VỪA KHÍT --- */
+        .fc-timegrid-slot {
+            height: 28px !important; /* Tối ưu chiều cao khe để lịch không bị quá dài, không cần cuộn */
+        }
+
+        /* Ẩn giờ mặc định của lịch để dùng giờ custom ở dòng 1 */
+        .fc-event-time {
+            display: none !important; 
+        }
+
+        /* --- THẺ LỊCH: HIỂN THỊ ĐẦY ĐỦ THÔNG TIN NGAY TỪ ĐẦU --- */
+        .fc-timegrid-event, .fc-daygrid-event {
+            border-radius: 4px !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
+            overflow: hidden !important; /* Ẩn phần chữ tràn để luôn vừa khít với ô */
+            z-index: 1;
+        }
+        
+        .fc-event-main {
+            overflow: hidden !important; 
+            padding: 3px !important;
+        }
+        
+        .fc-event-title {
+            font-size: 0.65rem !important; /* Chữ nhỏ gọn */
+            font-weight: 500 !important;
+            line-height: 1.3 !important; 
+            white-space: pre !important; /* TUYỆT ĐỐI TÔN TRỌNG \n, KHÔNG TỰ XUỐNG DÒNG */
+            overflow: hidden !important;
+            text-overflow: ellipsis !important; /* Nếu ô hẹp, cắt chữ hiển thị ... thay vì tràn */
+        }
+
+        /* Khi di chuột vào sẽ đẩy thẻ lịch lên trên cùng */
+        .fc-timegrid-event:hover, .fc-daygrid-event:hover {
+            z-index: 9999 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; 
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+inject_custom_css()
+
+# ==========================================
+# 🧠 CÁC HÀM XỬ LÝ LOGIC & AI ENGINE (GIỮ NGUYÊN)
 # ==========================================
 
 def chuyen_gio_thanh_phut(time_str):
@@ -44,9 +117,8 @@ def tinh_diem_phuong_an(phuong_an, chien_thuat):
     tong_gio_chet_ca_ky = 0
     tong_ngay_len_truong_ca_ky = 0
     tong_phut_hoc_ca_ky = 0
-    diem_thuong_dan_xen = 0 # 🌟 ĐIỂM THƯỞNG ĐẶC BIỆT DÀNH CHO LỚP ĐAN XEN
+    diem_thuong_dan_xen = 0 
     
-    # 1. Phát hiện và cộng điểm khổng lồ cho các lớp đan xen
     for i in range(len(phuong_an)):
         for j in range(i + 1, len(phuong_an)):
             b1 = phuong_an[i]
@@ -54,14 +126,12 @@ def tinh_diem_phuong_an(phuong_an, chien_thuat):
             if pd.isna(b1.get('Phút_BĐ')) or pd.isna(b2.get('Phút_BĐ')): continue
             if str(b1.get('Thứ')).replace('.0', '') != str(b2.get('Thứ')).replace('.0', ''): continue
             
-            # Đụng giờ nhưng khác tuần => Chính là ĐAN XEN
             if max(b1['Phút_BĐ'], b2['Phút_BĐ']) < min(b1['Phút_KT'], b2['Phút_KT']):
                 t1 = parse_tuan(b1.get('Tuần', ''))
                 t2 = parse_tuan(b2.get('Tuần', ''))
                 if t1 and t2 and len(t1.intersection(t2)) == 0:
-                    diem_thuong_dan_xen += 50000 # 💥 CHIẾN THẮNG TUYỆT ĐỐI
+                    diem_thuong_dan_xen += 50000 
     
-    # 2. Xử lý chấm điểm thời gian
     all_weeks = set()
     for buoi in phuong_an:
         tuan = parse_tuan(buoi.get('Tuần', ''))
@@ -95,13 +165,15 @@ def tinh_diem_phuong_an(phuong_an, chien_thuat):
                 bd_sau = ca_hocs[i+1][0]
                 khoang_cach = bd_sau - kt_truoc
                 
-                if khoang_cach > 60: 
+                if kt_truoc <= 705 and bd_sau >= 750:
+                    khoang_cach = max(0, khoang_cach - 45) 
+                    
+                if khoang_cach > 30: 
                     tong_gio_chet_ca_ky += khoang_cach
                     
-    # CÔNG THỨC CHẤM ĐIỂM
-    diem += diem_thuong_dan_xen # Thưởng lớp đan xen
-    diem -= (tong_gio_chet_ca_ky * 2) # Phạt giờ chết
-    diem -= tong_phut_hoc_ca_ky # Ưu tiên lớp học ít tiết (VD MI2020: 3 tiết > 4 tiết)
+    diem += diem_thuong_dan_xen 
+    diem -= (tong_gio_chet_ca_ky * 2) 
+    diem -= tong_phut_hoc_ca_ky 
     
     if chien_thuat == "Học dồn (Tối ưu ngày nghỉ)":
         diem -= (tong_ngay_len_truong_ca_ky * 100) 
@@ -122,9 +194,9 @@ def kiem_tra_xung_dot_trong_goi(goi_lop):
                 t1 = parse_tuan(b1.get('Tuần', ''))
                 t2 = parse_tuan(b2.get('Tuần', ''))
                 if t1 and t2 and len(t1.intersection(t2)) == 0:
-                    pass # KHÔNG ĐỤNG (Khác tuần)
+                    pass 
                 else:
-                    return True # ĐỤNG GIỜ
+                    return True 
     return False
 
 def thiet_ke_lich_toi_uu(danh_sach_hp, df_data, chien_thuat="Mặc định"):
@@ -216,7 +288,6 @@ def thiet_ke_lich_toi_uu(danh_sach_hp, df_data, chien_thuat="Mặc định"):
 
     phuong_an_hop_le = []
     
-    # 🌟 SỬA ĐỔI DUY NHẤT TẠI ĐÂY: Hướng dẫn thuật toán tìm kiếm lớp đan xen trước tiên
     def backtrack(index_mon, lich_hien_tai):
         if index_mon == len(danh_sach_hp_toi_uu):
             phuong_an_hop_le.append(lich_hien_tai.copy())
@@ -240,7 +311,7 @@ def thiet_ke_lich_toi_uu(danh_sach_hp, df_data, chien_thuat="Mặc định"):
                         t1 = parse_tuan(buoi_moi.get('Tuần', ''))
                         t2 = parse_tuan(buoi_cu.get('Tuần', ''))
                         if t1 and t2 and len(t1.intersection(t2)) == 0:
-                            diem_dan_xen_nhanh += 1 # 💎 Ghi nhận lớp này có thể đan xen tuần
+                            diem_dan_xen_nhanh += 1 
                         else:
                             xung_dot = True
                             break
@@ -249,7 +320,6 @@ def thiet_ke_lich_toi_uu(danh_sach_hp, df_data, chien_thuat="Mặc định"):
             if not xung_dot:
                 lua_chon_co_diem.append((option_lop, diem_dan_xen_nhanh))
                 
-        # Sắp xếp để AI bốc những nhánh sinh ra lịch đan xen vào giỏ trước tiên
         lua_chon_co_diem.sort(key=lambda x: x[1], reverse=True)
         
         for option_lop, _ in lua_chon_co_diem:
@@ -265,7 +335,6 @@ def thiet_ke_lich_toi_uu(danh_sach_hp, df_data, chien_thuat="Mặc định"):
     if chien_thuat != "Mặc định":
         phuong_an_hop_le.sort(key=lambda pa: tinh_diem_phuong_an(pa, chien_thuat), reverse=True)
         
-    # --- BỘ LỌC ĐA DẠNG HÓA KẾT QUẢ ĐỂ HIỂN THỊ ĐÚNG 6 PHƯƠNG ÁN KHÁC NHAU ---
     top_6_khac_biet = []
     seen_signatures = set()
     
@@ -288,13 +357,22 @@ def thiet_ke_lich_toi_uu(danh_sach_hp, df_data, chien_thuat="Mặc định"):
             
     return {"success": True, "error_msg": "", "data": top_6_khac_biet}
 
+
+# ==========================================
+# 🎨 XỬ LÝ DỮ LIỆU HIỂN THỊ CALENDAR
+# ==========================================
 def chuyen_thanh_calendar_events(phuong_an):
     events = []
     ngay_mapping = {
         '2': '2026-06-01', '3': '2026-06-02', '4': '2026-06-03',
-        '5': '2026-06-04', '6': '2026-06-05', '7': '2026-06-06'
+        '5': '2026-06-04', '6': '2026-06-05', '7': '2026-06-06', '8': '2026-06-07'
     }
-    colors = ["#FF6C6C", "#3D9DF3", "#00B48A", "#F39C12", "#9B59B6", "#34495E", "#E74C3C"]
+    
+    # Bảng màu Pastel dịu mắt
+    colors = [
+        "#FF8A8A", "#65B7F3", "#45D0B6", "#F6B956", 
+        "#B284C8", "#5A7287", "#FF926B", "#81C784", "#D8A7B1"
+    ]
     color_map = {}
     
     for buoi in phuong_an:
@@ -305,41 +383,62 @@ def chuyen_thanh_calendar_events(phuong_an):
         loai_lop = buoi.get('Loại_lớp', '')
         phong = buoi.get('Phòng', '')
         tuan = str(buoi.get('Tuần', ''))
+        ma_lop = buoi.get('Mã_lớp', '')
+        
+        # Bắt linh hoạt các dạng cột ghi thông tin Max Đăng ký
+        max_dk = buoi.get('SLĐK max', buoi.get('Max ĐK', buoi.get('Max_ĐK', buoi.get('SL Max', 'N/A'))))
+        if pd.isna(max_dk): max_dk = 'N/A'
         
         if pd.isna(buoi.get('Phút_BĐ')) or pd.isna(buoi.get('Thứ')):
+            # HIỂN THỊ ĐỒ ÁN (RÚT GỌN CHỮ ĐỂ VỪA Ô)
+            title = f"⏱ Cả ngày\n"
+            title += f"📚 {hp} ({loai_lop})\n"
+            title += f"📝 {ma_lop}\n"
+            title += f"🏫 {phong}\n"
+            title += f"📅 {tuan}\n"
+            title += f"👥 {max_dk}"
+
             events.append({
-                "title": f"📌 {hp} ({loai_lop}) - Mã: {buoi.get('Mã_lớp')} (Đồ án)",
+                "title": title,
                 "start": "2026-06-07",
                 "allDay": True,
-                "backgroundColor": "#7F8C8D",
-                "borderColor": "#7F8C8D"
+                "backgroundColor": "#95A5A6", 
+                "borderColor": "#95A5A6",
+                "textColor": "#ffffff"
             })
         else:
             thu = str(buoi.get('Thứ')).replace('.0', '')
             ngay = ngay_mapping.get(thu, '2026-06-01')
             gio_bd = str(buoi.get('Giờ_BĐ_str', '0000')).zfill(4)
             gio_kt = str(buoi.get('Giờ_KT_str', '0000')).zfill(4)
+            
             start_time = f"{ngay}T{gio_bd[:2]}:{gio_bd[2:]}:00"
             end_time = f"{ngay}T{gio_kt[:2]}:{gio_kt[2:]}:00"
-            title = f"{hp} ({loai_lop}) - Lớp: {buoi.get('Mã_lớp')} - {phong} - Tuần: {tuan}"
+            
+            # TẠO TEXT CHUẨN, MỖI THÔNG TIN ĐÚNG 1 DÒNG
+            title = f"⏱ {gio_bd[:2]}:{gio_bd[2:]}-{gio_kt[:2]}:{gio_kt[2:]}\n"
+            title += f"📚 {hp} ({loai_lop})\n"
+            title += f"📝 {ma_lop}\n"
+            title += f"🏫 {phong}\n"
+            title += f"📅 {tuan}\n"
+            title += f"👥 Max: {max_dk}"
             
             events.append({
                 "title": title,
                 "start": start_time,
                 "end": end_time,
                 "backgroundColor": color_map[hp],
-                "borderColor": color_map[hp]
+                "borderColor": color_map[hp],
+                "textColor": "#ffffff" 
             })
     return events
 
 
 # ==========================================
-# 🎨 GIAO DIỆN TRANG WEB VÀ CHATBOT
+# 🖥️ XÂY DỰNG GIAO DIỆN (STREAMLIT UI)
 # ==========================================
 
-st.set_page_config(page_title="HUST Timetable AI", page_icon="🤖", layout="wide")
-
-@st.cache_data(show_spinner="Đang xử lý dữ liệu và dọn dẹp file...")
+@st.cache_data(show_spinner="Đang tải và làm sạch dữ liệu...")
 def xu_ly_du_lieu_file(file_obj, file_name):
     if file_name.endswith('.csv'):
         try: df = pd.read_csv(file_obj, header=2, encoding='utf-8')
@@ -350,7 +449,9 @@ def xu_ly_du_lieu_file(file_obj, file_name):
         
     df = df.dropna(how='all')
     df.columns = df.columns.astype(str).str.strip()
-    cot_muc_tieu = ['Mã_lớp', 'Mã_lớp_kèm', 'Mã_HP', 'Tên_HP', 'Thứ', 'Thời_gian', 'BĐ', 'KT', 'Kíp', 'Tuần', 'Phòng', 'Cần_TN', 'Trạng_thái', 'Loại_lớp', 'Mã_QL']
+    
+    # Bổ sung các cột thông tin cần thiết vào danh sách trích xuất
+    cot_muc_tieu = ['Mã_lớp', 'Mã_lớp_kèm', 'Mã_HP', 'Tên_HP', 'Thứ', 'Thời_gian', 'BĐ', 'KT', 'Kíp', 'Tuần', 'Phòng', 'Cần_TN', 'Trạng_thái', 'Loại_lớp', 'Mã_QL', 'Max ĐK', 'Max_ĐK', 'SLĐK max', 'SL Max']
     df_clean = df[[col for col in cot_muc_tieu if col in df.columns]].copy()
     
     if 'Trạng_thái' in df_clean.columns: 
@@ -363,72 +464,126 @@ def xu_ly_du_lieu_file(file_obj, file_name):
         df_clean['Phút_KT'] = df_clean['Giờ_KT_str'].apply(chuyen_gio_thanh_phut)
     return df_clean
 
-st.title("🤖 Chatbot Xếp Lịch HUST")
-st.warning("⚠️ Vui lòng bỏ qua các môn năm nhất (VD: IT1108) do dữ liệu trường thường chưa cập nhật đủ lớp LT/BT.")
+# --- Header ---
+st.title("🎓 Trợ Lý Xếp Lịch HUST")
+st.markdown("Chatbot AI tối ưu thời khóa biểu sinh viên Đại học Bách Khoa Hà Nội.")
+st.markdown("<div class='red-warning'>⚠️ <b>Lưu ý:</b> Vui lòng bỏ qua các môn năm nhất (VD: IT1108) do dữ liệu của trường thường chưa cập nhật đủ lớp LT/BT.</div>", unsafe_allow_html=True)
 
+# --- Sidebar (Dashboard) ---
 with st.sidebar:
-    st.header("📂 Dữ liệu thời khóa biểu")
-    uploaded_file = st.file_uploader("Tải file Excel hoặc CSV", type=["xlsx", "xls", "csv"])
+    st.header("📂 Dữ liệu đầu vào")
+    uploaded_file = st.file_uploader("Tải file TKB (Excel/CSV)", type=["xlsx", "xls", "csv"])
+    
     if uploaded_file is not None:
         try:
             df_sach = xu_ly_du_lieu_file(uploaded_file, uploaded_file.name)
-            st.success(f"✅ Đã tải dữ liệu! Tìm thấy {len(df_sach)} lớp.")
-            if 'Mã_QL' in df_sach.columns:
-                ds_chuong_trinh = [ct for ct in df_sach['Mã_QL'].dropna().unique() if str(ct).strip() != '']
-                if ds_chuong_trinh:
-                    chuong_trinh_chon = st.multiselect("🎓 Lọc Chương trình đào tạo:", options=ds_chuong_trinh, default=ds_chuong_trinh)
-                    df_sach = df_sach[df_sach['Mã_QL'].isin(chuong_trinh_chon)]
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Tổng số lớp", f"{len(df_sach):,}")
+            with col2:
+                if 'Mã_HP' in df_sach.columns:
+                    st.metric("Số môn học", df_sach['Mã_HP'].nunique())
+            
+            st.success("✅ Tải dữ liệu thành công!")
+            
+            with st.expander("🛠️ Bộ lọc chương trình đào tạo", expanded=False):
+                if 'Mã_QL' in df_sach.columns:
+                    ds_chuong_trinh = [ct for ct in df_sach['Mã_QL'].dropna().unique() if str(ct).strip() != '']
+                    if ds_chuong_trinh:
+                        chuong_trinh_chon = st.multiselect("Bỏ tick các hệ không liên quan:", options=ds_chuong_trinh, default=ds_chuong_trinh)
+                        df_sach = df_sach[df_sach['Mã_QL'].isin(chuong_trinh_chon)]
+                        st.caption(f"Còn lại {len(df_sach)} lớp.")
+                        
             st.session_state.tkb_data = df_sach
-        except Exception as e: st.error(f"Lỗi đọc file: {e}")
+        except Exception as e: 
+            st.error(f"Lỗi đọc file: {e}")
 
     st.markdown("---")
-    st.header("⚙️ Cấu hình Tối ưu")
+    st.header("⚙️ Cấu hình Thuật toán")
     chien_thuat = st.radio(
-        "Chiến thuật xếp lịch:", 
+        "Mục tiêu xếp lịch:", 
         ["Học dồn (Tối ưu ngày nghỉ)", "Học dàn trải (Giảm tải)", "Mặc định"],
         help="Hệ thống tự động phát hiện lớp có thể đan xen tuần học và đưa chúng lên Top 1."
     )
 
+# --- Khung Chatbot ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    st.session_state.messages.append({"role": "assistant", "type": "text", "content": "Xin chào! Bạn muốn xếp lịch môn nào? Hãy gõ mã HP (VD: SSH1151, IT4653, MI2020)."})
+    st.session_state.messages.append({
+        "role": "assistant", 
+        "type": "text", 
+        "content": "👋 Xin chào! Bạn muốn xếp lịch môn nào? Hãy gõ mã Học phần vào đây nhé (VD: `SSH1151, IT4653, MI2020`)."
+    })
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         if msg.get("type") == "text": 
             st.markdown(msg["content"])
         elif msg.get("type") == "calendar_selector":
-            st.markdown(msg["content"])
-            chon_pa = st.selectbox("📌 Chọn phương án để xem chi tiết:", options=[f"Phương án {i+1} (Top {i+1})" for i in range(len(msg["phuong_an_list"]))], key=f"box_hist_{msg['id']}")
-            idx = int(chon_pa.split(" ")[-1].replace(")", "")) - 1
-            calendar(events=chuyen_thanh_calendar_events(msg["phuong_an_list"][idx]), options=msg["options"], key=f"cal_{msg['id']}_{idx}")
+            st.success(msg["content"])
+            
+            with st.container(border=True):
+                col_sel, _ = st.columns([1, 1])
+                with col_sel:
+                    chon_pa = st.selectbox(
+                        "📌 Chọn phương án để xem chi tiết:", 
+                        options=[f"🌟 Phương án {i+1} (Xếp hạng {i+1})" for i in range(len(msg["phuong_an_list"]))], 
+                        key=f"box_hist_{msg['id']}"
+                    )
+                idx = int(chon_pa.split(" ")[-1].replace(")", "")) - 1
+                
+                calendar(events=chuyen_thanh_calendar_events(msg["phuong_an_list"][idx]), options=msg["options"], key=f"cal_{msg['id']}_{idx}")
 
-user_input = st.chat_input("VD: Xếp cho tôi MI2020, IT3090, IT3170 và IT3180...")
+user_input = st.chat_input("VD: Nhập MI2020, IT3090, IT3170, IT3180...")
 
 if user_input:
     st.chat_message("user").markdown(user_input)
     st.session_state.messages.append({"role": "user", "type": "text", "content": user_input})
     
     if "tkb_data" not in st.session_state:
-        st.session_state.messages.append({"role": "assistant", "type": "text", "content": "⚠️ Vui lòng tải file dữ liệu ở cột bên trái lên trước nhé!"})
+        st.session_state.messages.append({"role": "assistant", "type": "text", "content": "⚠️ Chờ đã! Bạn chưa tải file Thời khóa biểu ở thanh bên trái (Sidebar) lên kìa."})
         st.rerun()
     else:
         danh_sach_hp = tach_ma_hp_tu_tin_nhan(user_input)
         if not danh_sach_hp:
-            st.session_state.messages.append({"role": "assistant", "type": "text", "content": "Bot không tìm thấy mã môn nào hợp lệ. Vui lòng thử lại!"})
+            st.session_state.messages.append({"role": "assistant", "type": "text", "content": "🤖 Bot không nhận diện được mã môn nào. Bạn thử kiểm tra lại chính tả nhé!"})
             st.rerun()
         else:
-            bot_reply = f"🔍 Đang quét hàng ngàn tổ hợp cho: **{', '.join(danh_sach_hp)}** (Đã kích hoạt định tuyến đan xen)..."
+            bot_reply = f"🔍 Đang phân tích hàng vạn tổ hợp lịch cho các môn: **{', '.join(danh_sach_hp)}**..."
             st.session_state.messages.append({"role": "assistant", "type": "text", "content": bot_reply})
             
             ket_qua_obj = thiet_ke_lich_toi_uu(danh_sach_hp, st.session_state.tkb_data, chien_thuat)
             
             if not ket_qua_obj["success"]:
-                st.session_state.messages.append({"role": "assistant", "type": "text", "content": f"❌ **LỖI:**\n\n{ket_qua_obj['error_msg']}"})
+                st.session_state.messages.append({"role": "assistant", "type": "text", "content": f"❌ **Phân tích thất bại:**\n\n{ket_qua_obj['error_msg']}"})
                 st.rerun()
             else:
-                calendar_opts = {"initialView": "timeGridWeek", "initialDate": "2026-06-01", "slotMinTime": "06:00:00", "slotMaxTime": "20:00:00", "allDaySlot": True, "headerToolbar": {"left": "", "center": "", "right": ""}}
+                # 📅 CẤU HÌNH LỊCH MỚI
+                calendar_opts = {
+                    "initialView": "timeGridWeek",
+                    "initialDate": "2026-06-01",
+                    "firstDay": 1, 
+                    "slotMinTime": "06:30:00",
+                    "slotMaxTime": "17:30:00",
+                    "allDaySlot": True,
+                    "allDayText": "Đồ án, khác", 
+                    "displayEventTime": False, # Tắt bộ đếm giờ mặc định để dùng giờ custom
+                    "locale": "vi", 
+                    "slotDuration": "00:30:00", 
+                    "slotLabelFormat": {
+                        "hour": 'numeric',
+                        "minute": '2-digit',
+                        "omitZeroMinute": False,
+                        "meridiem": 'short'
+                    },
+                    "dayHeaderFormat": {
+                        "weekday": "long" # Chỉ hiện Thứ Hai, Thứ Ba... (không hiện ngày)
+                    },
+                    "headerToolbar": False, 
+                    "contentHeight": "auto" # Tự động điều chỉnh kích thước để loại bỏ hoàn toàn thanh cuộn chuột
+                }
                 msg_id = len(st.session_state.messages)
-                success_msg = f"✅ Phân tích thành công! Hệ thống đã vét ra được lớp đan xen và lọc thành 6 phương án đa dạng."
+                success_msg = f"Đã quét xong! Dưới đây là **{len(ket_qua_obj['data'])} phương án hoàn hảo nhất** dành cho bạn."
                 st.session_state.messages.append({"role": "assistant", "type": "calendar_selector", "content": success_msg, "phuong_an_list": ket_qua_obj["data"], "options": calendar_opts, "id": msg_id})
                 st.rerun()
