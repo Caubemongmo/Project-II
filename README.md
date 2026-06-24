@@ -1,4 +1,4 @@
-# 🎓 HUST Timetable AI Assistant
+# 🎓 Timetable AI Assistant
 
 Một ứng dụng Web thông minh hỗ trợ sinh viên tự động hóa việc xếp lịch và tối ưu hóa thời khóa biểu.
 
