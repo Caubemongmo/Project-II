@@ -27,7 +27,6 @@ def xu_ly_du_lieu_file(file_obj, file_name):
     df = df.dropna(how='all')
     df.columns = df.columns.astype(str).str.strip()
     
-    # Bổ sung các cột thông tin cần thiết vào danh sách trích xuất
     cot_muc_tieu = ['Mã_lớp', 'Mã_lớp_kèm', 'Mã_HP', 'Tên_HP', 'Thứ', 'Thời_gian', 'BĐ', 'KT', 'Kíp', 'Tuần', 'Phòng', 'Cần_TN', 'Trạng_thái', 'Loại_lớp', 'Mã_QL', 'Max ĐK', 'Max_ĐK', 'SLĐK max', 'SL Max']
     df_clean = df[[col for col in cot_muc_tieu if col in df.columns]].copy()
     
@@ -48,7 +47,6 @@ def chuyen_thanh_calendar_events(phuong_an):
         '5': '2026-06-04', '6': '2026-06-05', '7': '2026-06-06', '8': '2026-06-07'
     }
     
-    # Bảng màu Pastel dịu mắt
     colors = [
         "#FF8A8A", "#65B7F3", "#45D0B6", "#F6B956", 
         "#B284C8", "#5A7287", "#FF926B", "#81C784", "#D8A7B1"
@@ -70,8 +68,8 @@ def chuyen_thanh_calendar_events(phuong_an):
         if pd.isna(max_dk): max_dk = 'N/A'
         
         if pd.isna(buoi.get('Phút_BĐ')) or pd.isna(buoi.get('Thứ')):
-            # HIỂN THỊ ĐỒ ÁN (RÚT GỌN CHỮ ĐỂ VỪA Ô)
-            title = f"⏱ Cả ngày\n"
+            # HIỂN THỊ ĐỒ ÁN
+            title = f"⏱\n"
             title += f"📚 {hp} ({loai_lop})\n"
             title += f"📝 {ma_lop}\n"
             title += f"🏫 {phong}\n"
@@ -95,7 +93,6 @@ def chuyen_thanh_calendar_events(phuong_an):
             start_time = f"{ngay}T{gio_bd[:2]}:{gio_bd[2:]}:00"
             end_time = f"{ngay}T{gio_kt[:2]}:{gio_kt[2:]}:00"
             
-            # TẠO TEXT CHUẨN, MỖI THÔNG TIN ĐÚNG 1 DÒNG
             title = f"⏱ {gio_bd[:2]}:{gio_bd[2:]}-{gio_kt[:2]}:{gio_kt[2:]}\n"
             title += f"📚 {hp} ({loai_lop})\n"
             title += f"📝 {ma_lop}\n"

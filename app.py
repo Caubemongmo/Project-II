@@ -1,14 +1,12 @@
 import streamlit as st
 from streamlit_calendar import calendar
-
-# Tích hợp từ 2 tệp vừa tạo
 from read_data import tach_ma_hp_tu_tin_nhan, xu_ly_du_lieu_file, chuyen_thanh_calendar_events
 from algorithm import thiet_ke_lich_toi_uu
 
 # ==========================================
-# 🎨 CẤU HÌNH GIAO DIỆN & CUSTOM CSS
+# CẤU HÌNH GIAO DIỆN & CUSTOM CSS
 # ==========================================
-st.set_page_config(page_title="HUST Timetable AI", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="Timetable AI Assistant", page_icon="🎓", layout="wide")
 
 def inject_custom_css():
     st.markdown("""
@@ -16,7 +14,7 @@ def inject_custom_css():
         /* Tùy chỉnh font chữ tổng thể */
         .stApp { font-family: 'Inter', 'Segoe UI', sans-serif; }
         
-        /* Metric thống kê - Đỏ Bách Khoa */
+        /* Metric thống kê - Đỏ */
         [data-testid="stMetricValue"] { font-size: 1.8rem; color: #C62828; font-weight: bold; }
         
         /* Style dòng cảnh báo */
@@ -25,13 +23,13 @@ def inject_custom_css():
             border-radius: 5px; border-left: 5px solid #D32F2F; margin-bottom: 1rem; 
         }
 
-        /* ÉP KÍCH THƯỚC LỊCH NGẮN LẠI VỪA KHÍT */
+        /* ÉP KÍCH THƯỚC LỊCH VỪA KHÍT */
         .fc-timegrid-slot { height: 28px !important; }
 
-        /* Ẩn giờ mặc định của lịch để dùng giờ custom ở dòng 1 */
+        /* Ẩn giờ mặc định của lịch */
         .fc-event-time { display: none !important; }
 
-        /* THẺ LỊCH: HIỂN THỊ ĐẦY ĐỦ THÔNG TIN NGAY TỪ ĐẦU */
+        /* THẺ LỊCH: HIỂN THỊ ĐẦY ĐỦ THÔNG TIN */
         .fc-timegrid-event, .fc-daygrid-event {
             border-radius: 4px !important;
             border: 1px solid rgba(255,255,255,0.3) !important;
@@ -69,9 +67,9 @@ inject_custom_css()
 # ==========================================
 
 # --- Header ---
-st.title("🎓 Trợ Lý Xếp Lịch HUST")
-st.markdown("Chatbot AI tối ưu thời khóa biểu sinh viên Đại học Bách Khoa Hà Nội.")
-st.markdown("<div class='red-warning'>⚠️ <b>Lưu ý:</b> Vui lòng bỏ qua các môn năm nhất (VD: IT1108) do dữ liệu của trường thường chưa cập nhật đủ lớp LT/BT.</div>", unsafe_allow_html=True)
+st.title("🎓 Trợ Lý Sắp Xếp Thời Khóa Biểu")
+st.markdown("Chatbot AI tối ưu thời khóa biểu dành cho sinh viên.")
+st.markdown("<div class='red-warning'>⚠️ <b>Lưu ý:</b> Vui lòng bỏ qua các môn năm nhất (VD: MI1111) do dữ liệu của trường thường chưa cập nhật đủ lớp LT/BT.</div>", unsafe_allow_html=True)
 
 # --- Sidebar (Dashboard) ---
 with st.sidebar:
@@ -91,11 +89,11 @@ with st.sidebar:
             
             st.success("✅ Tải dữ liệu thành công!")
             
-            with st.expander("🛠️ Bộ lọc chương trình đào tạo", expanded=False):
+            with st.expander("🛠️ Chương trình đào tạo", expanded=False):
                 if 'Mã_QL' in df_sach.columns:
                     ds_chuong_trinh = [ct for ct in df_sach['Mã_QL'].dropna().unique() if str(ct).strip() != '']
                     if ds_chuong_trinh:
-                        chuong_trinh_chon = st.multiselect("Bỏ tick các hệ không liên quan:", options=ds_chuong_trinh, default=ds_chuong_trinh)
+                        chuong_trinh_chon = st.multiselect("Tick chọn CTĐT của bạn:", options=ds_chuong_trinh, default=ds_chuong_trinh)
                         df_sach = df_sach[df_sach['Mã_QL'].isin(chuong_trinh_chon)]
                         st.caption(f"Còn lại {len(df_sach)} lớp.")
                         
@@ -104,11 +102,11 @@ with st.sidebar:
             st.error(f"Lỗi đọc file: {e}")
 
     st.markdown("---")
-    st.header("⚙️ Cấu hình Thuật toán")
+    st.header("⚙️ Cấu hình yêu cầu")
     chien_thuat = st.radio(
         "Mục tiêu xếp lịch:", 
-        ["Học dồn (Tối ưu ngày nghỉ)", "Học dàn trải (Giảm tải)", "Mặc định"],
-        help="Hệ thống tự động phát hiện lớp có thể đan xen tuần học và đưa chúng lên Top 1."
+        ["Mặc định", "Học dồn (Tối ưu ngày nghỉ)", "Học dàn trải (Giảm tải)"],
+        help="Chọn chiến thuật xếp lịch phù hợp với nhu cầu của bạn."
     )
 
 # --- Khung Chatbot ---
@@ -142,11 +140,12 @@ for msg in st.session_state.messages:
 user_input = st.chat_input("VD: Nhập MI2020, IT3090, IT3170, IT3180...")
 
 if user_input:
+    user_input = user_input.upper()
     st.chat_message("user").markdown(user_input)
     st.session_state.messages.append({"role": "user", "type": "text", "content": user_input})
     
     if "tkb_data" not in st.session_state:
-        st.session_state.messages.append({"role": "assistant", "type": "text", "content": "⚠️ Chờ đã! Bạn chưa tải file Thời khóa biểu ở thanh bên trái (Sidebar) lên kìa."})
+        st.session_state.messages.append({"role": "assistant", "type": "text", "content": "⚠️ Chưa upload file Thời khóa biểu!"})
         st.rerun()
     else:
         danh_sach_hp = tach_ma_hp_tu_tin_nhan(user_input)
@@ -154,7 +153,7 @@ if user_input:
             st.session_state.messages.append({"role": "assistant", "type": "text", "content": "🤖 Bot không nhận diện được mã môn nào. Bạn thử kiểm tra lại chính tả nhé!"})
             st.rerun()
         else:
-            bot_reply = f"🔍 Đang phân tích hàng vạn tổ hợp lịch cho các môn: **{', '.join(danh_sach_hp)}**..."
+            bot_reply = f"🔍 Đang phân tích..."
             st.session_state.messages.append({"role": "assistant", "type": "text", "content": bot_reply})
             
             ket_qua_obj = thiet_ke_lich_toi_uu(danh_sach_hp, st.session_state.tkb_data, chien_thuat)
@@ -188,6 +187,6 @@ if user_input:
                     "contentHeight": "auto" 
                 }
                 msg_id = len(st.session_state.messages)
-                success_msg = f"Đã quét xong! Dưới đây là **{len(ket_qua_obj['data'])} phương án hoàn hảo nhất** dành cho bạn."
+                success_msg = f"Đã phân tích xong! Dưới đây là **{len(ket_qua_obj['data'])} phương án hoàn hảo nhất** dành cho bạn."
                 st.session_state.messages.append({"role": "assistant", "type": "calendar_selector", "content": success_msg, "phuong_an_list": ket_qua_obj["data"], "options": calendar_opts, "id": msg_id})
                 st.rerun()

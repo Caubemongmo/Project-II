@@ -21,7 +21,7 @@ def parse_tuan(tuan_str):
 def tinh_diem_phuong_an(phuong_an, chien_thuat):
     if not phuong_an: return -99999
     
-    diem = 10000
+    diem = 100
     tong_gio_chet_ca_ky = 0
     tong_ngay_len_truong_ca_ky = 0
     tong_phut_hoc_ca_ky = 0
@@ -38,7 +38,7 @@ def tinh_diem_phuong_an(phuong_an, chien_thuat):
                 t1 = parse_tuan(b1.get('Tuần', ''))
                 t2 = parse_tuan(b2.get('Tuần', ''))
                 if t1 and t2 and len(t1.intersection(t2)) == 0:
-                    diem_thuong_dan_xen += 50000 
+                    diem_thuong_dan_xen += 500 
     
     all_weeks = set()
     for buoi in phuong_an:
@@ -80,13 +80,13 @@ def tinh_diem_phuong_an(phuong_an, chien_thuat):
                     tong_gio_chet_ca_ky += khoang_cach
                     
     diem += diem_thuong_dan_xen 
-    diem -= (tong_gio_chet_ca_ky * 2) 
-    diem -= tong_phut_hoc_ca_ky 
+    diem -= (tong_gio_chet_ca_ky * 0.02) 
+    diem -= (tong_phut_hoc_ca_ky * 0.01)
     
     if chien_thuat == "Học dồn (Tối ưu ngày nghỉ)":
-        diem -= (tong_ngay_len_truong_ca_ky * 100) 
+        diem -= (tong_ngay_len_truong_ca_ky * 1) 
     elif chien_thuat == "Học dàn trải (Giảm tải)":
-        diem += (tong_ngay_len_truong_ca_ky * 50)  
+        diem += (tong_ngay_len_truong_ca_ky * 0.5)  
         
     return diem
 
