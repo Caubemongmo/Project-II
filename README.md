@@ -1,12 +1,6 @@
 # 🎓 HUST Timetable AI Assistant
 
-Một ứng dụng Web thông minh hỗ trợ sinh viên Đại học Bách Khoa Hà Nội (HUST) tự động hóa việc xếp lịch và tối ưu hóa thời khóa biểu bằng thuật toán Trí tuệ Nhân tạo (AI).
-
-## 🌟 Tính năng nổi bật
-* **Tự động hóa 100%:** Sinh viên chỉ cần nhập mã học phần (VD: `IT4653, MI2020`), hệ thống tự động quét qua hàng vạn tổ hợp và tìm ra các phương án lịch không xung đột thời gian.
-* **Tối ưu hóa đa chiến thuật:** Tích hợp thuật toán Backtracking và Heuristic để chấm điểm lịch học. Hỗ trợ chiến thuật "Học dồn" (tăng số ngày nghỉ) hoặc "Học dàn trải" (giảm tải áp lực học liên tục).
-* **Giao diện trực quan:** Hiển thị thời khóa biểu dạng Calendar khép kín, tối ưu hiển thị thông tin từng môn học (Mã lớp, Phòng, Tuần, SLĐK) gọn gàng trên mọi kích thước màn hình mà không bị tràn chữ.
-* **Xử lý đặc thù HUST:** Tự động bắt cặp lớp Lý thuyết - Bài tập, tự động ghép lớp Thí nghiệm, phát hiện thông minh và thưởng điểm cực cao cho các cấu hình môn đan xen tuần học.
+Một ứng dụng Web thông minh hỗ trợ sinh viên tự động hóa việc xếp lịch và tối ưu hóa thời khóa biểu.
 
 ## 🚀 Cài đặt và Sử dụng
 
